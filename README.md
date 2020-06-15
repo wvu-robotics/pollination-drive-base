@@ -1,7 +1,7 @@
 # WVU Robotics Bramblebee Gazebo Model
 
-This repository houses all packages for the Bramblebee Gazebo model. It relies
-on some Husky xacros to initialize. (DOCUMENT THEM)
+This repository houses all packages for the Bramblebee Gazebo model. See
+`simulator-pollination` for the main repository to run pollination simulations.
 
 ### TODO
 - Should `bramblebee_gazebo/src/GazeboRosVelodyneLaser.cpp` be organized in

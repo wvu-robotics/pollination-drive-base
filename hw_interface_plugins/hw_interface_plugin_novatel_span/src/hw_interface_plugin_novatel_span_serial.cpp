@@ -8,9 +8,9 @@ hw_interface_plugin_novatel_span::novatel_span_serial::novatel_span_serial()
     ROS_INFO("A Wild Novatel Span Plugin Appeared!");
 
     //force the ROS Console level to Debug Level
-    if( ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug) ) {
-           ros::console::notifyLoggerLevelsChanged();
-        }
+    //if( ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug) ) {
+    //       ros::console::notifyLoggerLevelsChanged();
+    //    }
 
     //enable automatic class metric collection.
     enableMetrics();

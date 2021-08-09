@@ -30,7 +30,7 @@ husky_velocity_controller:
   linear:
     x:
       has_velocity_limits    : true
-      max_velocity           : 0.3   # m/s **1.0**
+      max_velocity           : 1.0   # m/s **1.0**
       has_acceleration_limits: true
       max_acceleration       : 3.0   # m/s^2
   angular:

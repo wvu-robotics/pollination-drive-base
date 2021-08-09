@@ -10,8 +10,8 @@ TrajectoryPlannerROS:
  acc_lim_x: 2.5
  acc_lim_theta:  3.2
 
- max_vel_x: 0.3 # 1.0
- min_vel_x: -0.3 # 0.0
+ max_vel_x: 0.25 # 1.0
+ min_vel_x: -0.25 # 0.0
 
  max_vel_theta: 0.8 # 1.0
  min_vel_theta: -0.8 # -1.0
@@ -23,7 +23,7 @@ TrajectoryPlannerROS:
  # Goal Tolerance Parameters
  yaw_goal_tolerance: 0.1
  xy_goal_tolerance: 0.2
- latch_xy_goal_tolerance: false
+ latch_xy_goal_tolerance: true
 
  # Forward Simulation Parameters
  sim_time: 2.0
@@ -53,12 +53,12 @@ TrajectoryPlannerROS:
 
 DWAPlannerROS:
   # Robot configuration parameters  
-  acc_lim_x: 2.5
+  acc_lim_x: 2.0 # 2.5
   acc_lim_y: 0
-  acc_lim_th: 3.2
+  acc_lim_th: 2.2 # 3.2
 
-  max_vel_x: 0.5 # 1.0
-  min_vel_x: -0.2 # 0.0
+  max_vel_x: 0.3 # 1.0
+  min_vel_x: -0.3 # 0.0
   max_vel_y: 0
   min_vel_y: 0
 
@@ -66,10 +66,10 @@ DWAPlannerROS:
   #min_trans_vel: 0.1
   #max_rot_vel: 0.8 # 1.0
   #min_rot_vel: 0.2
-  max_vel_trans: 0.5 # 0.5
-  min_vel_trans: 0.1
-  max_vel_theta: 0.8 # 1.0
-  min_vel_theta: 0.2
+  max_vel_trans: 0.4 # 0.5
+  min_vel_trans: 0.1 # 0.1
+  max_vel_theta: 0.4 # 1.0
+  min_vel_theta: 0.3 # 0.2
 
   # Goal Tolerance Parameters
   yaw_goal_tolerance: 0.1
@@ -77,12 +77,12 @@ DWAPlannerROS:
   latch_xy_goal_tolerance: true
 
   # Forward Simulation Parameters
-  # sim_time: 2.0
-  # sim_granularity: 0.02
-  # vx_samples: 6
-  # vy_samples: 0
-  # vtheta_samples: 20
-  # penalize_negative_x: false
+  sim_time: 0.5
+  sim_granularity: 0.02
+  vx_samples: 10
+  vy_samples: 0
+  vtheta_samples: 20
+  penalize_negative_x: false
 
   # # Trajectory scoring parameters
   # path_distance_bias: 5.0 # The weighting for how much the controller should stay close to the path it was given  **32.0**

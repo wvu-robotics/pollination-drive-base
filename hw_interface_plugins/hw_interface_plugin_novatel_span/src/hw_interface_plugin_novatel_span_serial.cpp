@@ -121,7 +121,7 @@ bool hw_interface_plugin_novatel_span::novatel_span_serial::interfaceReadHandler
     }
     else
     {
-        if(((unsigned short)((receivedData[arrayStartPos+4]&0xFF) + ((receivedData[arrayStartPos+5]&0xFF)<<8))) == 268) // Check if message ID is RAWIMU (268)
+        if(((unsigned short)((receivedData[arrayStartPos+4]&0xFF) + ((receivedData[arrayStartPos+5]&0xFF)<<8))) == 325) // Check if message ID is RAWIMUS (325)
         {
             // populate IMU message accelerations and angular velocities
             imuMessage.linear_acceleration.z = accelScaleFactor*((double)((receivedData[arrayStartPos+headerLen+16]&0xFF) +
@@ -191,54 +191,70 @@ std::size_t hw_interface_plugin_novatel_span::novatel_span_serial::novatelSpanSt
     headerLen = 0;
     fullPacketLen = 0;
     dataArrayStart = 0;
+    ROS_DEBUG("START: totalBytesInBuffer = %li",totalBytesInBuffer);
     if(error != boost::asio::error::operation_aborted)
     {
         if(totalBytesInBuffer < syncSeqLen)
         {
-            ROS_DEBUG_EXTRA_NAME("Returning Early, %ld", syncSeqLen-totalBytesInBuffer);
+            //ROS_DEBUG_EXTRA_NAME("Returning Early, %ld", syncSeqLen-totalBytesInBuffer);
+            ROS_DEBUG("not enough bytes for sync secquence");
             return syncSeqLen-totalBytesInBuffer;
         }
         for(long i=0; i<totalBytesInBuffer; i++)
         {
             if((receivedData[i]&0xFF) == 0xAA) // Find first sync char
             {
+                ROS_DEBUG("0. find first sync sequence char");
                 if((totalBytesInBuffer-(i+1)) < (syncSeqLen-1)) // Not enough to find rest of rest of sync sequence, read remaining
                 {
+                    ROS_DEBUG("not enough to find rest of sync sequence");
                     return syncSeqLen-1;
                 }
                 else
                 {
                     if((receivedData[i+1]&0xFF) == 0x44) // Find second sync char
                     {
+                        ROS_DEBUG("1. find second sync sequence char");
                         if((totalBytesInBuffer-(i+1)-1) < (syncSeqLen-2)) // Not enough to find rest of rest of sync sequence, read remaining
                         {
-                           return syncSeqLen-2;
+                            ROS_DEBUG("not enough to find rest of sync sequence");
+                            return syncSeqLen-2;
                         }
                         else
                         {
-                            if((receivedData[i+2]&0xFF) == 0x12) // Find third sync char
+                            if((receivedData[i+2]&0xFF) == 0x13) // Find third sync char
                             {
+                                ROS_DEBUG("2. find third sync sequence char");
                                 dataArrayStart = i;
-                                if((totalBytesInBuffer-(i+1)-2) < 1) // Not enough to find header length, read another byte
+                                if(0/*(totalBytesInBuffer-(i+1)-2) < 1*/) // Not enough to find header length, read another byte
                                 {
+                                    ROS_DEBUG("not enough to find header len");
                                     return 1;
                                 }
                                 else
                                 {
-                                    headerLen = (long)(receivedData[i+3]&0xFF); // Record the length of the header
+                                    ROS_DEBUG("3. find header len");
+                                    //headerLen = (long)(receivedData[i+3]&0xFF); // Record the length of the header
+                                    headerLen = 12;
                                     if(totalBytesInBuffer-dataArrayStart < headerLen) // Not enough to read full header, read remaining header length
                                     {
+                                        ROS_DEBUG("not enough to find rest of header");
                                         return headerLen-(totalBytesInBuffer-dataArrayStart);
                                     }
                                     else
                                     {
-                                        fullPacketLen = (long)(receivedData[i+8]&0xFF + ((receivedData[i+9]&0xFF)<<8)) + headerLen + 4; // Record full packet length (message length + header length + 4 byte CRC)
+                                        ROS_DEBUG("4. find full header");
+                                        //fullPacketLen = (long)(receivedData[i+8]&0xFF + ((receivedData[i+9]&0xFF)<<8)) + headerLen + 4; // Record full packet length (message length + header length + 4 byte CRC)
+                                        fullPacketLen = (long)(receivedData[i+3]&0xFF) + headerLen + 4;
+                                        ROS_DEBUG("message len = %lu, full packet len = %lu",((long)(receivedData[i+3]&0xFF)), fullPacketLen);
                                         if(totalBytesInBuffer-dataArrayStart < fullPacketLen) // Not enough bytes to be full packet, read remaining
                                         {
+                                            ROS_DEBUG("not enough to find rest of packet");
                                             return fullPacketLen-(totalBytesInBuffer-dataArrayStart);
                                         }
                                         else
                                         {
+                                            ROS_DEBUG("5. find full packet");
                                             return 0; // Full packet length found, no need to read more
                                         }
                                     }

@@ -14,6 +14,8 @@ novatel_span:
         baudrate           : 115200,
         subscribeToTopic   : "/example/subscribe",
         publishToTopic     : "/imu/data",
+        recordGPSData      : true,
+        gpsDataFileName    : "~/gps_data_1.bin"
     }
 
 

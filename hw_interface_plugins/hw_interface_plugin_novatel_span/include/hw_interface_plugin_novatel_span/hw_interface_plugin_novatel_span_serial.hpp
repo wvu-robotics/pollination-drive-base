@@ -11,6 +11,11 @@
 
 //include ros message types
 #include <sensor_msgs/Imu.h>
+#include <std_msgs/Int64.h>
+#include <std_msgs/UInt16.h>
+
+//file writing for GPS data
+#include <fstream>
 
 #define CRC32_POLYNOMIAL 0xEDB88320L
 #define PI 3.14159265358979
@@ -24,7 +29,7 @@ namespace hw_interface_plugin_novatel_span {
     {
     public:
         novatel_span_serial();
-        ~novatel_span_serial() {}
+        ~novatel_span_serial();
 
     protected:
 
@@ -41,8 +46,14 @@ namespace hw_interface_plugin_novatel_span {
         long fullPacketLen;
         sensor_msgs::Imu imuMessage;
         ros::Publisher imuPublisher;
+        std_msgs::UInt16 gpsWeekMsg;
+        ros::Publisher gpsWeekPub;
+        std_msgs::Int64 gpsMillisecondsMsg;
+        ros::Publisher gpsMillisecondsPub;
         double gyroScaleFactor;
         double accelScaleFactor;
+        bool recordGPSData = false;
+        std::ofstream gpsDataFile;
 
     private:
         unsigned long CRC32Value_(int i);

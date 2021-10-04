@@ -11,8 +11,7 @@
 
 //include ros message types
 #include <sensor_msgs/Imu.h>
-#include <std_msgs/Int64.h>
-#include <std_msgs/UInt16.h>
+#include <hw_interface_plugin_novatel_span/NovatelGPSTime.h>
 
 //file writing for GPS data
 #include <fstream>
@@ -46,10 +45,8 @@ namespace hw_interface_plugin_novatel_span {
         long fullPacketLen;
         sensor_msgs::Imu imuMessage;
         ros::Publisher imuPublisher;
-        std_msgs::UInt16 gpsWeekMsg;
-        ros::Publisher gpsWeekPub;
-        std_msgs::Int64 gpsMillisecondsMsg;
-        ros::Publisher gpsMillisecondsPub;
+        hw_interface_plugin_novatel_span::NovatelGPSTime gpsTimeMsg;
+        ros::Publisher gpsTimePub;
         double gyroScaleFactor;
         double accelScaleFactor;
         bool recordGPSData = false;

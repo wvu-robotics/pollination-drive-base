@@ -15,7 +15,7 @@ novatel_span:
         subscribeToTopic   : "/example/subscribe",
         publishToTopic     : "/imu/data",
         recordGPSData      : true,
-        gpsDataFileName    : "~/gps_data_1.bin"
+        gpsDataFileName    : "/home/bramblebee/Desktop/data/gps_data_test.bin"
     }
 
 

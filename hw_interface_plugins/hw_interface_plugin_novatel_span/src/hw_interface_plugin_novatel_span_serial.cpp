@@ -93,9 +93,8 @@ bool hw_interface_plugin_novatel_span::novatel_span_serial::subPluginInit(ros::N
             ROS_ERROR("No gpsDataFileName param provided");
             exit(1);
         }
-        gpsDataFile.open(gpsDataFileName, std::ios::out | std::ios::binary);
-        gpsWeekPub = nhPtr->advertise<std_msgs::UInt16>("/gps_week", 1);
-        gpsMillisecondsPub = nhPtr->advertise<std_msgs::Int64>("/gps_milliseconds", 1);
+        gpsDataFile.open(gpsDataFileName, std::ios::out | std::ios::trunc | std::ios::binary);
+        gpsTimePub = nhPtr->advertise<hw_interface_plugin_novatel_span::NovatelGPSTime>("/gps_time", 1);
     }
 
     return true;
@@ -152,7 +151,6 @@ bool hw_interface_plugin_novatel_span::novatel_span_serial::interfaceReadHandler
     {
         if(((unsigned short)((receivedData[arrayStartPos+4]&0xFF) + ((receivedData[arrayStartPos+5]&0xFF)<<8))) == 325) // Check if message ID is RAWIMUS (325)
         {
-            ROS_DEBUG("Find RAWIMUS packet");
             // populate IMU message accelerations and angular velocities
             imuMessage.linear_acceleration.z = accelScaleFactor*((double)((receivedData[arrayStartPos+headerLen+16]&0xFF) +
                                                     ((receivedData[arrayStartPos+headerLen+17]&0xFF)<<8) +
@@ -196,18 +194,20 @@ bool hw_interface_plugin_novatel_span::novatel_span_serial::interfaceReadHandler
         }
         else if(((unsigned short)((receivedData[arrayStartPos+4]&0xFF) + ((receivedData[arrayStartPos+5]&0xFF)<<8))) == 140) // Check if message ID is RANGECMP (140)
         {
-            ROS_DEBUG("Find RANGECMP packet");
             // Extract GPS week and milliseconds
-            unsigned short gpsWeek = (unsigned short)((receivedData[arrayStartPos+headerLen+14]&0xFF) + ((receivedData[arrayStartPos+headerLen+15&0xFF])<<8));
-            long gpsMilliseconds = (long)((receivedData[arrayStartPos+headerLen+16]&0xFF) +
-                                           ((receivedData[arrayStartPos+headerLen+17]&0xFF)<<8) + 
-                                           ((receivedData[arrayStartPos+headerLen+18]&0xFF)<<16) +
-                                           ((receivedData[arrayStartPos+headerLen+19]&0xFF)<<24));
-            // Publish GPS time ROS messages
-            gpsWeekMsg.data = gpsWeek;
-            gpsMillisecondsMsg.data = gpsMilliseconds;
-            gpsWeekPub.publish(gpsWeekMsg);
-            gpsMillisecondsPub.publish(gpsMillisecondsMsg);
+            unsigned short gpsWeek = (unsigned short)((unsigned short)(receivedData[arrayStartPos+14]&0xFF) + ((unsigned short)(receivedData[arrayStartPos+15]&0xFF)<<8));
+            long gpsMilliseconds = (long)((long)(receivedData[arrayStartPos+16]&0xFF) +
+                                           ((long)(receivedData[arrayStartPos+17]&0xFF)<<8) + 
+                                           ((long)(receivedData[arrayStartPos+18]&0xFF)<<16) +
+                                           ((long)(receivedData[arrayStartPos+19]&0xFF)<<24));
+            // Publish GPS time ROS message
+            gpsTimeMsg.header.stamp = ros::Time::now();
+            gpsTimeMsg.week = gpsWeek;
+            gpsTimeMsg.milliseconds = gpsMilliseconds;
+            gpsTimePub.publish(gpsTimeMsg);
+
+            // increment sequency number for next cycle
+            gpsTimeMsg.header.seq++;
 
             // Copy boost shared array to local char array
             char localArray[length];
@@ -220,7 +220,7 @@ bool hw_interface_plugin_novatel_span::novatel_span_serial::interfaceReadHandler
             gpsDataFile.write(localArray+arrayStartPos, length);
         }
     }
-
+    
     /*ROS_INFO("Buf Pointer: 0x%p\r\n", &receivedData[arrayStartPos]);
     ROS_INFO("length = %u, arrayStartPos = %i",length, arrayStartPos);
     std::printf("Contents: ");
@@ -277,9 +277,9 @@ std::size_t hw_interface_plugin_novatel_span::novatel_span_serial::novatelSpanSt
                         }
                         else
                         {
-                            if((receivedData[i+2]&0xFF) == 0x13 || (receivedData[i+2]&0xFF) == 0x12) // Find third sync char
+                            if(((receivedData[i+2]&0xFF) == 0x13) || ((receivedData[i+2]&0xFF) == 0x12)) // Find third sync char
                             {
-                                ROS_DEBUG("2. find third sync sequence char");
+                                ROS_DEBUG("2. find third sync sequence char: %X",(receivedData[i+2]&0xFF));
                                 dataArrayStart = i;
                                 if((receivedData[i+2]&0xFF) == 0x12 && ((totalBytesInBuffer-(i+1)-2) < 1)) // Not enough to find header length, read another byte
                                 {
@@ -292,10 +292,12 @@ std::size_t hw_interface_plugin_novatel_span::novatel_span_serial::novatelSpanSt
                                     if((receivedData[i+2]&0xFF) == 0x12)
                                     {
                                         headerLen = (long)(receivedData[i+3]&0xFF); // Record the length of the header
+                                        ROS_DEBUG("FULL headerLen = %i",headerLen);
                                     }
                                     else
                                     {
                                         headerLen = 12;
+                                        ROS_DEBUG("SHORT headerLen = %i",headerLen);
                                     }
                                     if(totalBytesInBuffer-dataArrayStart < headerLen) // Not enough to read full header, read remaining header length
                                     {
@@ -307,13 +309,13 @@ std::size_t hw_interface_plugin_novatel_span::novatel_span_serial::novatelSpanSt
                                         ROS_DEBUG("4. find full header");
                                         if((receivedData[i+2]&0xFF) == 0x12)
                                         {
-                                            fullPacketLen = (long)(receivedData[i+8]&0xFF + ((receivedData[i+9]&0xFF)<<8)) + headerLen + 4; // Record full packet length (message length + header length + 4 byte CRC)
-                                            ROS_DEBUG("message len = %lu, full packet len = %lu",((long)(receivedData[i+8]&0xFF + ((receivedData[i+9]&0xFF)<<8)), fullPacketLen));
+                                            fullPacketLen = (long)((long)(receivedData[i+8]&0xFF) + ((long)(receivedData[i+9]&0xFF)<<8)) + headerLen + 4; // Record full packet length (message length + header length + 4 byte CRC)
+                                            ROS_DEBUG("FULL message len = %lu, full packet len = %lu",(long)(receivedData[i+8]&0xFF + ((receivedData[i+9]&0xFF)<<8)), fullPacketLen);
                                         }
                                         else
                                         {
                                             fullPacketLen = (long)(receivedData[i+3]&0xFF) + headerLen + 4;
-                                            ROS_DEBUG("message len = %lu, full packet len = %lu",((long)(receivedData[i+3]&0xFF)), fullPacketLen);
+                                            ROS_DEBUG("SHORT message len = %lu, full packet len = %lu",((long)(receivedData[i+3]&0xFF)), fullPacketLen);
                                         }
                                         if(totalBytesInBuffer-dataArrayStart < fullPacketLen) // Not enough bytes to be full packet, read remaining
                                         {
